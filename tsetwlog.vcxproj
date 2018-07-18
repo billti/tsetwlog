@@ -143,6 +143,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include=".gitignore" />
     <None Include="test.js" />
   </ItemGroup>
   <ItemGroup>
