@@ -25,7 +25,11 @@ namespace demo {
 		vector<MethodDef> methods{
 			{"logEvent", LogEvent},
 			{"logStartCommand", LogStartCommand},
-			{"logStopCommand", LogStopCommand}
+			{"logStopCommand", LogStopCommand},
+			{"logStartUpdateProgram", LogStartUpdateProgram},
+			{"logStopUpdateProgram", LogStopUpdateProgram},
+			{"logStartUpdateGraph", LogStartUpdateGraph},
+			{"logStopUpdateGraph", LogStopUpdateGraph}
 		};
 
 		for (MethodDef& method : methods)

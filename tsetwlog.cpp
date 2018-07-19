@@ -10,6 +10,10 @@ TRACELOGGING_DEFINE_PROVIDER(
 namespace demo {
 	constexpr size_t STRING_ARG_BUFFER_SIZE = 1024;
 
+	TraceLoggingThreadActivity<g_hMyProvider> *cmdActivity = nullptr;
+	TraceLoggingThreadActivity<g_hMyProvider> *programActivity = nullptr;
+	TraceLoggingThreadActivity<g_hMyProvider> *updateGraphActivity = nullptr;
+
 	void InitEtw() {
 		TraceLoggingRegister(g_hMyProvider);
 	}
@@ -50,8 +54,6 @@ namespace demo {
 		return true;
 	}
 
-	TraceLoggingThreadActivity<g_hMyProvider> *cmdActivity = nullptr;
-
 	napi_value LogEvent(napi_env env, napi_callback_info args) {
 		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
 		{
@@ -72,14 +74,16 @@ namespace demo {
 	}
 
 	napi_value LogStartCommand(napi_env env, napi_callback_info args) {
+		if (cmdActivity != nullptr) return nullptr;
+
 		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
 		{
 			return nullptr;
 		}
 
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
 		wchar_t pCmd[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 2, pMsg, pCmd)) return nullptr;
+		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
+		if (!GetStringsFromArgs(env, args, 2, pCmd, pMsg)) return nullptr;
 
 		cmdActivity = new TraceLoggingThreadActivity<g_hMyProvider>();
 
@@ -99,9 +103,9 @@ namespace demo {
 			return nullptr;
 		}
 
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
 		wchar_t pCmd[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 2, pMsg, pCmd)) return nullptr;
+		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
+		if (!GetStringsFromArgs(env, args, 2, pCmd, pMsg)) return nullptr;
 
 		TraceLoggingWriteStop(*cmdActivity, "Command",
 			TraceLoggingWideString(pCmd, "command"),
@@ -110,6 +114,75 @@ namespace demo {
 
 		delete cmdActivity;
 		cmdActivity = nullptr;
+		return nullptr;
+	}
+
+	napi_value LogStartUpdateProgram(napi_env env, napi_callback_info args) {
+		if (programActivity != nullptr) return nullptr;
+		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
+		{
+			return nullptr;
+		}
+
+		programActivity = new TraceLoggingThreadActivity<g_hMyProvider>();
+
+		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
+		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+
+		TraceLoggingWriteStart(*programActivity, "UpdateProgram",
+			TraceLoggingWideString(pMsg, "msg")
+		);
+
+		return nullptr;
+	}
+
+	napi_value LogStopUpdateProgram(napi_env env, napi_callback_info args) {
+		if (programActivity == nullptr) return nullptr;
+
+		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
+		{
+			return nullptr;
+		}
+
+		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
+		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+
+		TraceLoggingWriteStop(*programActivity, "UpdateProgram",
+			TraceLoggingWideString(pMsg, "msg")
+		);
+
+		delete programActivity;
+		programActivity = nullptr;
+		return nullptr;
+	}
+
+	napi_value LogStartUpdateGraph(napi_env env, napi_callback_info args) {
+		// Not sure if these are re-entrant, so avoiding the use of an activity for start/stop events for now.
+		//if (updateGraphActivity != nullptr) return nullptr;
+
+		//updateGraphActivity = new TraceLoggingThreadActivity<g_hMyProvider>();
+
+		//TraceLoggingWriteStart(*updateGraphActivity, "UpdateGraph");
+
+		TraceLoggingWrite(g_hMyProvider,
+			"UpdateGraphStart",
+			TraceLoggingLevel(WINEVENT_LEVEL_VERBOSE) // Level is optional
+		);
+
+		return nullptr;
+	}
+	napi_value LogStopUpdateGraph(napi_env env, napi_callback_info args) {
+		//if (updateGraphActivity == nullptr) return nullptr;
+		
+		//TraceLoggingWriteStop(*updateGraphActivity, "UpdateGraph");
+		TraceLoggingWrite(g_hMyProvider,
+			"UpdateGraphStop",
+			TraceLoggingLevel(WINEVENT_LEVEL_VERBOSE) // Level is optional
+		);
+
+
+		//delete updateGraphActivity;
+		//updateGraphActivity = nullptr;
 		return nullptr;
 	}
 }
