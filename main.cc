@@ -29,7 +29,10 @@ namespace demo {
 			{"logStartUpdateProgram", LogStartUpdateProgram},
 			{"logStopUpdateProgram", LogStopUpdateProgram},
 			{"logStartUpdateGraph", LogStartUpdateGraph},
-			{"logStopUpdateGraph", LogStopUpdateGraph}
+			{"logStopUpdateGraph", LogStopUpdateGraph},
+			{"logErrEvent", LogErrEvent},
+			{"logInfoEvent", LogInfoEvent},
+			{"logPerfEvent", LogPerfEvent}
 		};
 
 		for (MethodDef& method : methods)
