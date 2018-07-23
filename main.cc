@@ -19,8 +19,8 @@ namespace demo {
 
 		InitEtw();
 
-		// TODO: napi_add_env_cleanup_hook to CleanupEtw (only in >= Node.js 10.2.0)
-		// Should call: TraceLoggingUnregister(g_hMyProvider);
+		// Requires Node.js 10.2 or later. See https://nodejs.org/dist/latest-v10.x/docs/api/n-api.html#n_api_napi_add_env_cleanup_hook
+		status = napi_add_env_cleanup_hook(env, CleanupEtw, nullptr);
 
 		vector<MethodDef> methods{
 			{"logEvent", LogEvent},

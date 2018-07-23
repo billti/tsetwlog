@@ -14,6 +14,7 @@ TRACELOGGING_DECLARE_PROVIDER(g_hMyProvider);
 
 namespace demo {
 	void InitEtw();
+	void CleanupEtw(void *arg);
 	napi_value LogEvent(napi_env env, napi_callback_info args);
 	napi_value LogErrEvent(napi_env env, napi_callback_info args);
 	napi_value LogPerfEvent(napi_env env, napi_callback_info args);

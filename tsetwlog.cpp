@@ -19,6 +19,11 @@ namespace demo {
 		TraceLoggingRegister(g_hMyProvider);
 	}
 
+	void CleanupEtw(void *arg)
+	{
+		TraceLoggingUnregister(g_hMyProvider);
+	}
+
 	bool GetStringsFromArgs(napi_env env, napi_callback_info cb_info, size_t count, wchar_t* pArg1, wchar_t* pArg2)
 	{
 		napi_status status;
