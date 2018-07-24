@@ -145,6 +145,10 @@
   <ItemGroup>
     <None Include=".gitignore" />
     <None Include="test.js" />
+    <None Include="ts-wpr-profile.wprp">
+      <SubType>Designer</SubType>
+      <FileType>XML</FileType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cc" />
@@ -152,6 +156,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tsetwlog.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="ts-wpa-regions.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
