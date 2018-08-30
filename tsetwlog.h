@@ -25,4 +25,14 @@ namespace demo {
 	napi_value LogStopUpdateProgram(napi_env env, napi_callback_info args);
 	napi_value LogStartUpdateGraph(napi_env env, napi_callback_info args);
 	napi_value LogStopUpdateGraph(napi_env env, napi_callback_info args);
+	napi_value LogStartResolveModule(napi_env env, napi_callback_info args);
+	napi_value LogStopResolveModule(napi_env env, napi_callback_info args);
+	napi_value LogStartParseSourceFile(napi_env env, napi_callback_info args);
+	napi_value LogStopParseSourceFile(napi_env env, napi_callback_info args);
+	napi_value LogStartReadFile(napi_env env, napi_callback_info args);
+	napi_value LogStopReadFile(napi_env env, napi_callback_info args);
+	napi_value LogStartBindFile(napi_env env, napi_callback_info args);
+	napi_value LogStopBindFile(napi_env env, napi_callback_info args);
+	napi_value LogStartScheduledOperation(napi_env env, napi_callback_info args);
+	napi_value LogStopScheduledOperation(napi_env env, napi_callback_info args);
 }

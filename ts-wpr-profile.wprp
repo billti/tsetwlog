@@ -6,12 +6,12 @@
     Copyright="Microsoft Corporation"
     Version="1.0">
   <Profiles>
-    <SystemCollector
+    <!--<SystemCollector
         Id="SystemCollector_TypeScript"
         Name="NT Kernel Logger">
       <BufferSize Value="512"/>
       <Buffers Value="3" PercentageOfTotalMemory="true"/>
-    </SystemCollector>
+    </SystemCollector>-->
 
     <EventCollector
         Id="EventCollector_TypeScript"
@@ -19,7 +19,7 @@
       <BufferSize Value="128"/>
       <Buffers Value="64"/>
     </EventCollector>
-    <SystemProvider Id="SystemProvider_TypeScript" Base="SystemProvider_Base">
+    <!--<SystemProvider Id="SystemProvider_TypeScript" Base="SystemProvider_Base">
       <Keywords Operation="Add">
         <Keyword Value="DiskIO"/>
         <Keyword Value="FileIO"/>
@@ -28,22 +28,33 @@
         <Keyword Value="Memory"/>
         <Keyword Value="MemoryInfo"/>
       </Keywords>
-    </SystemProvider>
+    </SystemProvider>-->
     <EventProvider Id="tsserverEventSource" Name="ac4e9dd1-3a7a-5022-fc37-f2394bc4f09e"></EventProvider>
-    <EventProvider Id="TypeScriptEventSource" Name="2c462c26-4e06-5ce4-8f88-934046dbbcd6"></EventProvider>
+    <EventProvider Id="TypeScriptEventSource" Name="*TypeScriptEventSource">
+      <CaptureStateOnSave>
+        <Keyword Value="0x0" />
+      </CaptureStateOnSave>
+    </EventProvider>
+    <!-- Needed for Task activity tracking -->
+    <EventProvider Id="System.Threading.Tasks.TplEventSource" Name="2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5">
+      <Keywords>
+        <Keyword Value="0x80"/>
+      </Keywords>
+    </EventProvider>
     <Profile Description="TypeScript logging"
         Name="TypeScript"
         Id="TypeScript.Verbose.File"
         DetailLevel="Verbose"
         LoggingMode="File">
       <Collectors>
-        <SystemCollectorId Value="SystemCollector_TypeScript">
+        <!--<SystemCollectorId Value="SystemCollector_TypeScript">
           <SystemProviderId Value="SystemProvider_TypeScript"/>
-        </SystemCollectorId>
+        </SystemCollectorId>-->
         <EventCollectorId Value="EventCollector_TypeScript">
           <EventProviders>
             <EventProviderId Value="tsserverEventSource"/>
             <EventProviderId Value="TypeScriptEventSource"/>
+            <EventProviderId Value="System.Threading.Tasks.TplEventSource"/>
           </EventProviders>
         </EventCollectorId>
       </Collectors>
