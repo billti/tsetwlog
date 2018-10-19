@@ -2,6 +2,10 @@
 #define WINVER 0x0601 // Support Win7 or later
 #define WIN32_LEAN_AND_MEAN
 
+// The below intrinsics are needed on debug builds currently
+#include <string.h>
+#pragma intrinsic(memset, wcslen)
+
 #include <Windows.h>
 #include <TraceLoggingProvider.h>
 #include <TraceLoggingActivity.h>
