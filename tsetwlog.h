@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 // The below intrinsics are needed on debug builds currently
+// See https://docs.microsoft.com/en-us/cpp/intrinsics/intrinsics-available-on-all-architectures
 #include <string.h>
 #pragma intrinsic(memset, wcslen)
 

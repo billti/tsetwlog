@@ -174,7 +174,7 @@
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   <ImportGroup Label="ExtensionTargets" />
   <PropertyGroup>
-    <LocalDebuggerCommand>c:\Program Files (x86)\Microsoft Visual Studio\Preview\Enterprise\MSBuild\Microsoft\VisualStudio\NodeJs\node.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>C:\Program Files (x86)\Microsoft Visual Studio\Preview\Enterprise\MSBuild\Microsoft\VisualStudio\NodeJs\node.exe</LocalDebuggerCommand>
     <LocalDebuggerCommandArguments>test.js</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerAttach>false</LocalDebuggerAttach>

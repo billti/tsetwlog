@@ -1,5 +1,5 @@
 try {
-    var addon = require("./" + process.arch + "/tsetwlog.node");
+    var addon = require("./index.js");
 }
 catch (e) {
     console.log(`Failed to load with exception ${e}`);
