@@ -1,27 +1,37 @@
-// Taken from https://github.com/nodejs/node-gyp/pull/653 to work with Electron
+// Based on a version from https://github.com/nodejs/node-gyp/pull/653 to work with Electron
 // "Official" node-gyp version at https://github.com/nodejs/node-gyp/blob/master/src/win_delay_load_hook.cc
 
-// Note: Code excluded for now due to the pain on delay loading without the CRT present and having to 
-// hand-craft a helper function. See https://docs.microsoft.com/en-us/cpp/build/reference/understanding-the-helper-function
-// This means this native module will only load in node.exe, and not in other hosts such as Electron or io.js.
-#ifdef xxx_MSC_VER
+#ifdef _MSC_VER
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <Shlwapi.h>
 #include <delayimp.h>
-#include <string.h>
 
 #pragma comment(lib, "Shlwapi.lib")
+
+/*
+ * This code is needed as the module builds against the node.exe library, but at runtime this is
+ * not guaranteed to be the binary name. For example, Electron uses an "electron.exe" host process,
+ * are loads Node.js as "node.dll". There are also Node.js forks which may have a different name (e.g. io.js).
+ *
+ * This means node.exe must be delay loaded, and the hooks below used to return the right module to bind to
+ * should it not be named "node.exe".
+ *
+ * Note: This also means the CRT does need to be linked in :-( , as delayimp.lib must be linked in
+ * for delay loading, and unresolved symbols "__load_config_used" and  "___guard_check_icall_fptr"
+ * occur without the CRT present. (If you are sure you won't need to load in non-node.exe processes,
+ * you can remove this code and also the CRT via /NODEFAULTLIB ).
+ */
 
 static FARPROC WINAPI load_exe_hook(unsigned int event, DelayLoadInfo* info) {
 
 	if (event != dliNotePreLoadLibrary)
 		return NULL;
 
-	if (_stricmp(info->szDll, "iojs.exe") != 0 &&
-		_stricmp(info->szDll, "node.exe") != 0 &&
-		_stricmp(info->szDll, "node.dll") != 0)
+	if (lstrcmpiA(info->szDll, "iojs.exe") != 0 &&
+		lstrcmpiA(info->szDll, "node.exe") != 0 &&
+		lstrcmpiA(info->szDll, "node.dll") != 0)
 		return NULL;
 
 	// Get a handle to the current process executable.
@@ -35,8 +45,8 @@ static FARPROC WINAPI load_exe_hook(unsigned int event, DelayLoadInfo* info) {
 	LPSTR processName = PathFindFileName(processPath);
 
 	// If the current process is node or iojs, then just return the proccess module.
-	if (_stricmp(processName, "node.exe") == 0 ||
-		_stricmp(processName, "iojs.exe") == 0) {
+	if (lstrcmpiA(processName, "node.exe") == 0 ||
+		lstrcmpiA(processName, "iojs.exe") == 0) {
 		return (FARPROC)processModule;
 	}
 
@@ -55,6 +65,6 @@ static FARPROC WINAPI load_exe_hook(unsigned int event, DelayLoadInfo* info) {
 }
 
 // See https://docs.microsoft.com/en-us/cpp/build/reference/notification-hooks
-decltype(__pfnDliNotifyHook2) __pfnDliNotifyHook2 = load_exe_hook;
+extern "C" const PfnDliHook __pfnDliNotifyHook2 = load_exe_hook;
 
 #endif

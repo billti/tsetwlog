@@ -85,7 +85,7 @@ namespace tsetwlog {
 
 	*/
 
-	// Do the work the macro would if we were using the C-runtime library
+	// Do the work the macro would if we were using the C-runtime library to initialize (avoiding about 75KB of binary)
 	extern "C" {
 		static napi_module _module;
 
@@ -97,9 +97,9 @@ namespace tsetwlog {
 			if (fdwReason == DLL_PROCESS_ATTACH)
 			{
 				_module = {
-					1,
+					NAPI_MODULE_VERSION,
 					0,
-					"c:\\src\\github\\tsetwlog\\main.cc",
+					__FILE__,
 					Init,
 					"tsetwlog",
 					0,
