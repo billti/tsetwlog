@@ -8,8 +8,6 @@
 #include <Shlwapi.h>
 #include <delayimp.h>
 
-#pragma comment(lib, "Shlwapi.lib")
-
 /*
  * This code is needed as the module builds against the node.exe library, but at runtime this is
  * not guaranteed to be the binary name. For example, Electron uses an "electron.exe" host process,
@@ -22,6 +20,8 @@
  * for delay loading, and unresolved symbols "__load_config_used" and  "___guard_check_icall_fptr"
  * occur without the CRT present. (If you are sure you won't need to load in non-node.exe processes,
  * you can remove this code and also the CRT via /NODEFAULTLIB ).
+ *
+ * Add library shlwapi.lib to the build. (Along with libcmt.lib & libvcruntime.lib from the /MT option).
  */
 
 static FARPROC WINAPI load_exe_hook(unsigned int event, DelayLoadInfo* info) {
