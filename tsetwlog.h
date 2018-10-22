@@ -1,6 +1,5 @@
 #pragma once
 #define WINVER 0x0601 // Support Win7 or later
-#define WIN32_LEAN_AND_MEAN
 
 // The below intrinsics are needed on debug builds currently
 // See https://docs.microsoft.com/en-us/cpp/intrinsics/intrinsics-available-on-all-architectures
@@ -12,6 +11,19 @@
 #include <TraceLoggingActivity.h>
 #include <winmeta.h>
 #include <node_api.h>
+
+// Declarations for the imported NAPI functions to use
+bool LoadNapiFunctions();
+
+#define DECL_NAPI_IMPL(fn_name) decltype(&fn_name) impl_##fn_name
+
+extern DECL_NAPI_IMPL(napi_module_register);
+extern DECL_NAPI_IMPL(napi_create_function);
+extern DECL_NAPI_IMPL(napi_set_named_property);
+extern DECL_NAPI_IMPL(napi_add_env_cleanup_hook);
+extern DECL_NAPI_IMPL(napi_get_cb_info);
+extern DECL_NAPI_IMPL(napi_typeof);
+extern DECL_NAPI_IMPL(napi_get_value_string_utf16);
 
 constexpr UINT64 TSSERVER_KEYWORD_PERF = 0x01;
 

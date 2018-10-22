@@ -84,22 +84,22 @@ namespace tsetwlog {
 		napi_value result[2];
 		if (count > 2) return false; // Only supports up to two args currently
 
-		status = napi_get_cb_info(env, cb_info, &argCount, result, &thisArg, &pData);
+		status = impl_napi_get_cb_info(env, cb_info, &argCount, result, &thisArg, &pData);
 		if (status != napi_ok || argCount < count) return false;
 
-		status = napi_typeof(env, result[0], &valueType);
+		status = impl_napi_typeof(env, result[0], &valueType);
 		if (status != napi_ok || valueType != napi_valuetype::napi_string) return false;
 		if (count >= 2)
 		{
-			status = napi_typeof(env, result[1], &valueType);
+			status = impl_napi_typeof(env, result[1], &valueType);
 			if (status != napi_ok || valueType != napi_valuetype::napi_string) return false;
 		}
 
-		status = napi_get_value_string_utf16(env, result[0], (char16_t*)pArg1, STRING_ARG_BUFFER_SIZE, &written);
+		status = impl_napi_get_value_string_utf16(env, result[0], (char16_t*)pArg1, STRING_ARG_BUFFER_SIZE, &written);
 		if (status != napi_ok) return false;
 		if (count >= 2)
 		{
-			status = napi_get_value_string_utf16(env, result[1], (char16_t*)pArg2, STRING_ARG_BUFFER_SIZE, &written);
+			status = impl_napi_get_value_string_utf16(env, result[1], (char16_t*)pArg2, STRING_ARG_BUFFER_SIZE, &written);
 			if (status != napi_ok) return false;
 		}
 

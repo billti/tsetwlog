@@ -23,16 +23,16 @@ namespace tsetwlog {
 		auto register_fn = [&](const char *name, napi_callback cb) {
 			napi_value fn;
 			napi_status status;
-			status = napi_create_function(env, name, 0, cb, nullptr, &fn);
+			status = impl_napi_create_function(env, name, 0, cb, nullptr, &fn);
 			if (status == napi_ok) {
-				status = napi_set_named_property(env, exports, name, fn);
+				status = impl_napi_set_named_property(env, exports, name, fn);
 			}
 			return status == napi_ok;
 		};
 
 		// Sort-circuiting evaluation for any failures
 		// Note: napi_add_env_cleanup_hook requires Node.js 10.2 or later. See https://nodejs.org/dist/latest-v10.x/docs/api/n-api.html#n_api_napi_add_env_cleanup_hook
-		bool success = napi_add_env_cleanup_hook(env, CleanupEtw, nullptr) == napi_ok &&
+		bool success = impl_napi_add_env_cleanup_hook(env, CleanupEtw, nullptr) == napi_ok &&
 			register_fn("logEvent", LogEvent) &&
 			register_fn("logStartCommand", LogStartCommand) &&
 			register_fn("logStopCommand", LogStopCommand) &&
@@ -96,6 +96,7 @@ namespace tsetwlog {
 
 			if (fdwReason == DLL_PROCESS_ATTACH)
 			{
+				LoadNapiFunctions();
 				_module = {
 					NAPI_MODULE_VERSION,
 					0,
@@ -106,7 +107,7 @@ namespace tsetwlog {
 					{0},
 				};
 
-				napi_module_register(&_module);
+				impl_napi_module_register(&_module);
 				return true;
 			}
 		}

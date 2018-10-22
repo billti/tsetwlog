@@ -1,7 +1,6 @@
 // The absolute minimum to compile without any CRT libraries present
 
 #define WINVER 0x0601 // Support Win7 or later
-#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
 void * __cdecl operator new(size_t s)
