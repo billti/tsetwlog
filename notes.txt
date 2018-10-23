@@ -1,0 +1,14 @@
+
+How should this handle initialization and multiple instances?
+
+ETW is generally a singleton - either the provider is on or off. This would imply global state.
+However are the Activity stacks thread specific?
+ - Does JS always run on the same OS thread in V8? If so, could use TLS.
+   - It would seem to, at least in Node.js, as it runs on the event loop.
+ - The issue is when to delete the activity (on Stop for the thread).
+ - But could multiple Node.js contexts be interleaving on the same thread?
+   - I don't see why not.
+   - However, the interleaved operation should still complete full nested start/stop activities.
+ - This basically means that on any thread, the activity stack is still going to fully populat and unwind
+   - But other threads may run in parallel and log activies. So still need to use TLS.
+   - Can always bail if logging has never been started.

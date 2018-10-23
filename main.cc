@@ -17,6 +17,8 @@
 
 namespace tsetwlog {
 
+	// TODO: Is this safe if initialized multiple times in a process?
+	// See https://nodejs.org/dist/latest-v10.x/docs/api/addons.html#addons_context_aware_addons
 	napi_value Init(napi_env env, napi_value exports) {
 		InitEtw();
 		

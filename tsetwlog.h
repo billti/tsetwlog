@@ -9,6 +9,7 @@
 #include <Windows.h>
 #include <TraceLoggingProvider.h>
 #include <TraceLoggingActivity.h>
+#include <evntprov.h>
 #include <winmeta.h>
 #include <node_api.h>
 

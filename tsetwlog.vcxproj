@@ -170,6 +170,9 @@
   <ItemGroup>
     <Xml Include="ts-wpa-regions.xml" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="notes.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   <ImportGroup Label="ExtensionTargets" />

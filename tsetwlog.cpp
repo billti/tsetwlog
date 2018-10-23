@@ -11,27 +11,27 @@ TRACELOGGING_DEFINE_PROVIDER(
  * The above expands in the preprocessor to the below. Isn't Standard C++ a thing of beauty! :-/
  * The good news is this seems to all be compile-time constants, so no C-runtime needed to initialize (I think).
 
-extern "C" { 
-	extern __inline void __cdecl _TlgDefineProvider_annotation__Tlgg_hMyProviderProv(void) { 
+extern "C" {
+	extern __inline void __cdecl _TlgDefineProvider_annotation__Tlgg_hMyProviderProv(void) {
 		__annotation(L"_TlgDefineProvider:|" L"9" L"|" L"g_hMyProvider" L"|" L"tsserverEventSource");
 	}
-}; 
+};
 __pragma(execution_character_set(push, "UTF-8"))
 __pragma(pack(push, 1))
-static struct { 
+static struct {
 	struct _TlgProviderMetadata_t _TlgProv;
 	char _TlgName[sizeof("tsserverEventSource")];
 } const __declspec(allocate(".rdata$zETW2")) __declspec(align(1)) _Tlgg_hMyProviderProv_Meta = {
 	{ _TlgBlobProvider3,
 		{ 0xac4e9dd1, 0x3a7a, 0x5022, 0xfc, 0x37, 0xf2, 0x39, 0x4b, 0xc4, 0xf0, 0x9e },
 		sizeof(_Tlgg_hMyProviderProv_Meta) - 1 - 16
-	}, 
+	},
 	("tsserverEventSource")
 };
 __pragma(pack(pop))
 __pragma(execution_character_set(pop))
 static struct _TlgProvider_t _Tlgg_hMyProviderProv = {
-	0, 
+	0,
 	&_Tlgg_hMyProviderProv_Meta._TlgProv.RemainingSize,
 	0,
 	0,
@@ -45,365 +45,401 @@ extern const TraceLoggingHProvider g_hMyProvider = &_Tlgg_hMyProviderProv;
 */
 
 namespace tsetwlog {
-	constexpr size_t STRING_ARG_BUFFER_SIZE = 256; // TODO: Allocate buffer (and check for overflows) without exceeding page for locals
+	using ThreadActivityPtr = TraceLoggingThreadActivity<g_hMyProvider> *;
+	constexpr size_t STRING_ARG_BUFFER_SIZE = 1024;
 	constexpr size_t ACTIVITY_STACK_SIZE = 1024;
+
+	// Holds the string arguments during conversion
+	wchar_t chBuf1[STRING_ARG_BUFFER_SIZE], chBuf2[STRING_ARG_BUFFER_SIZE], chBuf3[STRING_ARG_BUFFER_SIZE];
+
+	// Holds the stack of activities
+	ThreadActivityPtr activityStack[ACTIVITY_STACK_SIZE];
 	size_t nextActivityIndex = 0;
 
-	using ThreadActivityPtr = TraceLoggingThreadActivity<g_hMyProvider> *;
+	bool sendEvents = false;
 
-	ThreadActivityPtr cmdActivity = nullptr;
-	ThreadActivityPtr programActivity = nullptr;
-	ThreadActivityPtr resolveModuleActivity = nullptr;
-	ThreadActivityPtr readFileActivity = nullptr;
-	ThreadActivityPtr parseActivity = nullptr;
-	ThreadActivityPtr bindActivity = nullptr;
-	ThreadActivityPtr scheduledActivity = nullptr;
-	// TODO: Need to come up with a new way to handle recursive activity nesting
-	// std::vector<ThreadActivityPtr> updateGraphActivityList{};
+	inline void DeleteActivities() {
+		while (nextActivityIndex > 0) {
+			delete activityStack[--nextActivityIndex];
+		}
+	}
+
+	VOID NTAPI ProviderCallback(
+		_In_ LPCGUID SourceId,
+		_In_ ULONG IsEnabled,
+		_In_ UCHAR Level,
+		_In_ ULONGLONG MatchAnyKeyword,
+		_In_ ULONGLONG MatchAllKeyword,
+		_In_opt_ PEVENT_FILTER_DESCRIPTOR FilterData,
+		_Inout_opt_ PVOID CallbackContext
+	) {
+		// Called whenver the provider is enabled or modified.
+		// Note: If the provider is already enabled, then this gets called as part of registering the provider (i.e.
+		// on the same thread - the 'main' one for a Node.js app), else it will run on a thread pool thread.
+		// Thus don't depend on the thread-local state being available here.
+
+		sendEvents = IsEnabled > 0;
+
+		if (IsEnabled == 0 /* Stop */) DeleteActivities();
+
+		// Note: Could also do most interesting filter (e.g. Perf only) or keywords (e.g. PII) process here.
+	}
 
 	void InitEtw() {
-		TraceLoggingRegister(g_hMyProvider);
+		TraceLoggingRegisterEx(g_hMyProvider, ProviderCallback, nullptr);
 	}
 
 	void CleanupEtw(void *arg)
 	{
+		sendEvents = false;
 		TraceLoggingUnregister(g_hMyProvider);
+		DeleteActivities();
 	}
 
-	bool GetStringsFromArgs(napi_env env, napi_callback_info cb_info, size_t count, wchar_t* pArg1, wchar_t* pArg2)
-	{
-		napi_status status;
-		size_t argCount = count;
+	// argIndex is 1-based, i.e. specify 1 to get the first argument.
+	bool GetStringArg(napi_env env, napi_callback_info cb_info, size_t argIndex, wchar_t* pArg) {
+		if (argIndex > 5) return false; // Only support up to 5 args.
+
+		napi_value result[5];
+		size_t argCount = 5;
+		napi_valuetype valueType;
 		napi_value thisArg;
 		void *pData;
-		napi_valuetype valueType;
 		size_t written;
 
-		// Note: Increase these values and update conditions below to support more than 2 string args
-		// (And if more than 2, should probably convert into an indexed loop and pass string pointers as an array)
-		napi_value result[2];
-		if (count > 2) return false; // Only supports up to two args currently
+		napi_status status = impl_napi_get_cb_info(env, cb_info, &argCount, result, &thisArg, &pData);
+		if (status != napi_ok || argCount < argIndex) return false;
 
-		status = impl_napi_get_cb_info(env, cb_info, &argCount, result, &thisArg, &pData);
-		if (status != napi_ok || argCount < count) return false;
-
-		status = impl_napi_typeof(env, result[0], &valueType);
+		status = impl_napi_typeof(env, result[argIndex - 1], &valueType);
 		if (status != napi_ok || valueType != napi_valuetype::napi_string) return false;
-		if (count >= 2)
-		{
-			status = impl_napi_typeof(env, result[1], &valueType);
-			if (status != napi_ok || valueType != napi_valuetype::napi_string) return false;
-		}
 
-		status = impl_napi_get_value_string_utf16(env, result[0], (char16_t*)pArg1, STRING_ARG_BUFFER_SIZE, &written);
+		status = impl_napi_get_value_string_utf16(env, result[argIndex - 1], (char16_t*)pArg, STRING_ARG_BUFFER_SIZE, &written);
 		if (status != napi_ok) return false;
-		if (count >= 2)
-		{
-			status = impl_napi_get_value_string_utf16(env, result[1], (char16_t*)pArg2, STRING_ARG_BUFFER_SIZE, &written);
-			if (status != napi_ok) return false;
-		}
 
 		return true;
 	}
 
-	void LogActivityError(wchar_t *pMsg) {
+	void LogActivityError(wchar_t *pMsg, wchar_t *pType) {
 		TraceLoggingWrite(g_hMyProvider, 
 			"ActivityError", 
 			TraceLoggingLevel(WINEVENT_LEVEL_ERROR),
-			TraceLoggingWideString(pMsg, "msg"));
+			TraceLoggingWideString(pMsg, "msg"),
+			TraceLoggingWideString(pType, "activityType"));
 	}
 
 	napi_value LogEvent(napi_env env, napi_callback_info args) {
-		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
-		{
-			return nullptr;
-		}
-
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+		if (!sendEvents) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
 
 		TraceLoggingWrite(g_hMyProvider,
 			"Message",
 			TraceLoggingLevel(WINEVENT_LEVEL_VERBOSE), // Level is optional
 			//TraceLoggingKeyword(0x10),               // Keywords are optional
-			TraceLoggingWideString(pMsg, "msg")
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogErrEvent(napi_env env, napi_callback_info args) {
-		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
-		{
-			return nullptr;
-		}
-
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+		if (!sendEvents) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
 
 		TraceLoggingWrite(g_hMyProvider,
 			"Err",
 			TraceLoggingLevel(WINEVENT_LEVEL_ERROR),
-			TraceLoggingWideString(pMsg, "msg")
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogInfoEvent(napi_env env, napi_callback_info args) {
-		if (!TraceLoggingProviderEnabled(g_hMyProvider, WINEVENT_LEVEL_VERBOSE, /* any keywords */0))
-		{
-			return nullptr;
-		}
-
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+		if (!sendEvents) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
 
 		TraceLoggingWrite(g_hMyProvider,
 			"Info",
 			TraceLoggingLevel(WINEVENT_LEVEL_VERBOSE),
-			TraceLoggingWideString(pMsg, "msg")
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogPerfEvent(napi_env env, napi_callback_info args) {
-		if (!TraceLoggingProviderEnabled(g_hMyProvider, /* any level */0, /* any keywords */0))
-		{
-			return nullptr;
-		}
-
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+		if (!sendEvents) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
 
 		TraceLoggingWrite(g_hMyProvider,
 			"Perf",
 			TraceLoggingKeyword(TSSERVER_KEYWORD_PERF),
-			TraceLoggingWideString(pMsg, "msg")
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 		
 		return nullptr;
 	}
 
-	napi_value LogStartCommand(napi_env env, napi_callback_info args) {
-		if (cmdActivity != nullptr) {
-			LogActivityError(L"StartCommand called with existing activity");
+	ThreadActivityPtr AddActivity(wchar_t *pType) {
+		if (nextActivityIndex >= ACTIVITY_STACK_SIZE) {
+			LogActivityError(L"Activity stack size exceeded", pType);
+
+			// Still need to count the starts to correctly count/pair the stops
+			nextActivityIndex++;
 			return nullptr;
 		}
+		else {
+			activityStack[nextActivityIndex] = new TraceLoggingThreadActivity<g_hMyProvider>();
+			return activityStack[nextActivityIndex++];
+		}
+	}
 
-		wchar_t pCmd[STRING_ARG_BUFFER_SIZE];
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 2, pCmd, pMsg)) return nullptr;
+	ThreadActivityPtr GetRunningActivity(wchar_t *pType) {
+		if (nextActivityIndex == 0) {
+			// Maybe the trace started in the middle of an activity, so there are extra stops to ignore.
+			LogActivityError(L"ActivityStop received with no activity activity (may have started before trace)", pType);
+			return nullptr;
+		}
+		if (nextActivityIndex > ACTIVITY_STACK_SIZE) {
+			// We ran past the end and stopped logging new activities. Just count the stops.
+			nextActivityIndex--;
+			return nullptr;
+		}
+		else {
+			return activityStack[--nextActivityIndex];
+		}
+	}
 
-		cmdActivity = new TraceLoggingThreadActivity<g_hMyProvider>();
+	napi_value LogStartCommand(napi_env env, napi_callback_info args) {
+		if (!sendEvents) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+		if (!GetStringArg(env, args, 2, chBuf2)) return nullptr;
 
-		TraceLoggingWriteStart(*cmdActivity, "Command",
-			TraceLoggingWideString(pCmd, "command"),
-			TraceLoggingWideString(pMsg, "msg")
+		ThreadActivityPtr pActivity = AddActivity(L"Command");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "Command",
+			TraceLoggingWideString(chBuf1, "command"),
+			TraceLoggingWideString(chBuf2, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogStopCommand(napi_env env, napi_callback_info args) {
-		if (cmdActivity == nullptr) {
-			LogActivityError(L"StopCommand called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		wchar_t pCmd[STRING_ARG_BUFFER_SIZE];
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 2, pCmd, pMsg)) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+		if (!GetStringArg(env, args, 2, chBuf2)) return nullptr;
 
-		TraceLoggingWriteStop(*cmdActivity, "Command",
-			TraceLoggingWideString(pCmd, "command"),
-			TraceLoggingWideString(pMsg, "msg")
+		ThreadActivityPtr pActivity = GetRunningActivity(L"Command");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "Command",
+			TraceLoggingWideString(chBuf1, "command"),
+			TraceLoggingWideString(chBuf2, "msg")
 		);
 
-		delete cmdActivity;
-		cmdActivity = nullptr;
+		delete pActivity;
 		return nullptr;
 	}
 
-	bool StartActivityHelper(napi_env env, napi_callback_info args, ThreadActivityPtr &activity, wchar_t *pMsg) {
-		if (activity != nullptr) {
-			LogActivityError(L"StartActivityHelper called with active activity");
-			return false;
-		}
-
-		activity = new TraceLoggingThreadActivity<g_hMyProvider>();
-
-		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return false;
-
-		return true;
-	}
-
 	napi_value LogStartUpdateProgram(napi_env env, napi_callback_info args) {
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!StartActivityHelper(env, args, programActivity, pMsg)) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		TraceLoggingWriteStart(*programActivity, "UpdateProgram",
-			TraceLoggingWideString(pMsg, "msg")
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+
+		ThreadActivityPtr pActivity = AddActivity(L"UpdateProgram");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "UpdateProgram",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogStopUpdateProgram(napi_env env, napi_callback_info args) {
-		if (programActivity == nullptr) {
-			LogActivityError(L"StopUpdateProgram called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!GetStringsFromArgs(env, args, 1, pMsg, nullptr)) return nullptr;
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
 
-		TraceLoggingWriteStop(*programActivity, "UpdateProgram",
-			TraceLoggingWideString(pMsg, "msg")
+		ThreadActivityPtr pActivity = GetRunningActivity(L"UpdateProgram");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "UpdateProgram",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
-		delete programActivity;
-		programActivity = nullptr;
+		delete pActivity;
 		return nullptr;
 	}
 
 	napi_value LogStartUpdateGraph(napi_env env, napi_callback_info args) {
-		// UpdateGraph is reentrant. So always maintain a list of activities for these calls.
-		//TraceLoggingThreadActivity<g_hMyProvider> *newActivity = nullptr; // new TraceLoggingThreadActivity<g_hMyProvider>();
-		//updateGraphActivityList.push_back(newActivity);
-		//std::vector<std::string> {"my", "name", "is", "bill"};
-		//if (updateGraphActivityList.at(500) == nullptr) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		//TraceLoggingWriteStart(*newActivity, "UpdateGraph");
+		ThreadActivityPtr pActivity = AddActivity(L"UpdateGraph");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "UpdateGraph");
 
 		return nullptr;
 	}
+
 	napi_value LogStopUpdateGraph(napi_env env, napi_callback_info args) {
-		// Below could happen if logging was enabled in the midst of an activity
-		if (/*updateGraphActivityList.size()*/ 1 <= 0) {
-			LogActivityError(L"StopUpdateGraph called with no active activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
-		
-		//TraceLoggingWriteStop(*(updateGraphActivityList.back()), "UpdateGraph");
-		//updateGraphActivityList.pop_back();
 
+		ThreadActivityPtr pActivity = GetRunningActivity(L"UpdateGraph");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "UpdateGraph");
+
+		delete pActivity;
 		return nullptr;
 	}
 
 	napi_value LogStartResolveModule(napi_env env, napi_callback_info args) {
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!StartActivityHelper(env, args, resolveModuleActivity, pMsg)) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		TraceLoggingWriteStart(*resolveModuleActivity, "ResolveModule",
-			TraceLoggingWideString(pMsg, "msg")
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+
+		ThreadActivityPtr pActivity = AddActivity(L"ResolveModule");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "ResolveModule",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogStopResolveModule(napi_env env, napi_callback_info args) {
-		if (resolveModuleActivity == nullptr) {
-			LogActivityError(L"StopResolveModule called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		wchar_t pSuccess[STRING_ARG_BUFFER_SIZE];
-		GetStringsFromArgs(env, args, 1, pSuccess, nullptr);
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
 
-		TraceLoggingWriteStop(*resolveModuleActivity, "ResolveModule", TraceLoggingWideString(pSuccess, "msg"));
-		delete resolveModuleActivity;
-		resolveModuleActivity = nullptr;
+		ThreadActivityPtr pActivity = GetRunningActivity(L"ResolveModule");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "ResolveModule", TraceLoggingWideString(chBuf1, "msg"));
+		delete pActivity;
 		return nullptr;
 	}
 
 	napi_value LogStartParseSourceFile(napi_env env, napi_callback_info args) {
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!StartActivityHelper(env, args, parseActivity, pMsg)) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		TraceLoggingWriteStart(*parseActivity, "ParseSourceFile",
-			TraceLoggingWideString(pMsg, "msg")
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+
+		ThreadActivityPtr pActivity = AddActivity(L"ParseSourceFile");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "ParseSourceFile",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogStopParseSourceFile(napi_env env, napi_callback_info args) {
-		if (parseActivity == nullptr) {
-			LogActivityError(L"StopParseSourceFile called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		TraceLoggingWriteStop(*parseActivity, "ParseSourceFile");
-		delete parseActivity;
-		parseActivity = nullptr;
+		ThreadActivityPtr pActivity = GetRunningActivity(L"ParseSourceFile");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "ParseSourceFile");
+		delete pActivity;
 		return nullptr;
 	}
 	napi_value LogStartReadFile(napi_env env, napi_callback_info args) {
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!StartActivityHelper(env, args, readFileActivity, pMsg)) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		TraceLoggingWriteStart(*readFileActivity, "ReadFile",
-			TraceLoggingWideString(pMsg, "msg")
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+
+		ThreadActivityPtr pActivity = AddActivity(L"ReadFile");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "ReadFile",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogStopReadFile(napi_env env, napi_callback_info args) {
-		if (readFileActivity == nullptr) {
-			LogActivityError(L"StopReadFile called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		TraceLoggingWriteStop(*readFileActivity, "ReadFile");
-		delete readFileActivity;
-		readFileActivity = nullptr;
+		ThreadActivityPtr pActivity = GetRunningActivity(L"ReadFile");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "ReadFile");
+		delete pActivity;
 		return nullptr;
 	}
 	napi_value LogStartBindFile(napi_env env, napi_callback_info args) {
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!StartActivityHelper(env, args, bindActivity, pMsg)) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		TraceLoggingWriteStart(*bindActivity, "BindFile",
-			TraceLoggingWideString(pMsg, "msg")
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+
+		ThreadActivityPtr pActivity = AddActivity(L"BindFile");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "BindFile",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 
 	napi_value LogStopBindFile(napi_env env, napi_callback_info args) {
-		if (bindActivity == nullptr) {
-			LogActivityError(L"StopBindFile called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		TraceLoggingWriteStop(*bindActivity, "BindFile");
-		delete bindActivity;
-		bindActivity = nullptr;
+		ThreadActivityPtr pActivity = GetRunningActivity(L"BindFile");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "BindFile");
+		delete pActivity;
 		return nullptr;
 	}
 
 	napi_value LogStartScheduledOperation(napi_env env, napi_callback_info args) {
-		wchar_t pMsg[STRING_ARG_BUFFER_SIZE];
-		if (!StartActivityHelper(env, args, scheduledActivity, pMsg)) return nullptr;
+		if (!sendEvents) return nullptr;
 
-		TraceLoggingWriteStart(*scheduledActivity, "ScheduledOperation",
-			TraceLoggingWideString(pMsg, "msg")
+		if (!GetStringArg(env, args, 1, chBuf1)) return nullptr;
+
+		ThreadActivityPtr pActivity = AddActivity(L"ScheduledOperation");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStart(*pActivity, "ScheduledOperation",
+			TraceLoggingWideString(chBuf1, "msg")
 		);
 
 		return nullptr;
 	}
 	napi_value LogStopScheduledOperation(napi_env env, napi_callback_info args) {
-		if (scheduledActivity == nullptr) {
-			LogActivityError(L"StopScheduledOperation called with no existing activity");
+		if (!sendEvents && nextActivityIndex == 0) {
 			return nullptr;
 		}
 
-		TraceLoggingWriteStop(*scheduledActivity, "ScheduledOperation");
-		delete scheduledActivity;
-		scheduledActivity = nullptr;
+		ThreadActivityPtr pActivity = GetRunningActivity(L"ScheduledOperation");
+		if (pActivity == nullptr) return nullptr;
+
+		TraceLoggingWriteStop(*pActivity, "ScheduledOperation");
+		delete pActivity;
 		return nullptr;
 	}
 } // namespace tsetwlog
