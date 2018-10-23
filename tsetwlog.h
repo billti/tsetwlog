@@ -16,15 +16,21 @@
 // Declarations for the imported NAPI functions to use
 bool LoadNapiFunctions();
 
-#define DECL_NAPI_IMPL(fn_name) decltype(&fn_name) impl_##fn_name
+// Declare of define 
+#ifdef NAPI_IMPL
+  #define DECL_NAPI_IMPL(fn_name) decltype(&fn_name) p##fn_name
+#else
+  #define DECL_NAPI_IMPL(fn_name) extern decltype(&fn_name) p##fn_name
+#endif
 
-extern DECL_NAPI_IMPL(napi_module_register);
-extern DECL_NAPI_IMPL(napi_create_function);
-extern DECL_NAPI_IMPL(napi_set_named_property);
-extern DECL_NAPI_IMPL(napi_add_env_cleanup_hook);
-extern DECL_NAPI_IMPL(napi_get_cb_info);
-extern DECL_NAPI_IMPL(napi_typeof);
-extern DECL_NAPI_IMPL(napi_get_value_string_utf16);
+
+DECL_NAPI_IMPL(napi_module_register);
+DECL_NAPI_IMPL(napi_create_function);
+DECL_NAPI_IMPL(napi_set_named_property);
+DECL_NAPI_IMPL(napi_add_env_cleanup_hook);
+DECL_NAPI_IMPL(napi_get_cb_info);
+DECL_NAPI_IMPL(napi_typeof);
+DECL_NAPI_IMPL(napi_get_value_string_utf16);
 
 constexpr UINT64 TSSERVER_KEYWORD_PERF = 0x01;
 

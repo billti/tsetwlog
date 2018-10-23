@@ -78,7 +78,7 @@ namespace tsetwlog {
 		// on the same thread - the 'main' one for a Node.js app), else it will run on a thread pool thread.
 		// Thus don't depend on the thread-local state being available here.
 
-		sendEvents = IsEnabled > 0;
+		sendEvents = IsEnabled == 1 /* Start */;
 
 		if (IsEnabled == 0 /* Stop */) DeleteActivities();
 
@@ -107,22 +107,22 @@ namespace tsetwlog {
 		void *pData;
 		size_t written;
 
-		napi_status status = impl_napi_get_cb_info(env, cb_info, &argCount, result, &thisArg, &pData);
+		napi_status status = pnapi_get_cb_info(env, cb_info, &argCount, result, &thisArg, &pData);
 		if (status != napi_ok || argCount < argIndex) return false;
 
-		status = impl_napi_typeof(env, result[argIndex - 1], &valueType);
+		status = pnapi_typeof(env, result[argIndex - 1], &valueType);
 		if (status != napi_ok || valueType != napi_valuetype::napi_string) return false;
 
-		status = impl_napi_get_value_string_utf16(env, result[argIndex - 1], (char16_t*)pArg, STRING_ARG_BUFFER_SIZE, &written);
+		status = pnapi_get_value_string_utf16(env, result[argIndex - 1], (char16_t*)pArg, STRING_ARG_BUFFER_SIZE, &written);
 		if (status != napi_ok) return false;
 
 		return true;
 	}
 
-	void LogActivityError(wchar_t *pMsg, wchar_t *pType) {
+	void LogActivityWarning(wchar_t *pMsg, wchar_t *pType) {
 		TraceLoggingWrite(g_hMyProvider, 
 			"ActivityError", 
-			TraceLoggingLevel(WINEVENT_LEVEL_ERROR),
+			TraceLoggingLevel(WINEVENT_LEVEL_WARNING),
 			TraceLoggingWideString(pMsg, "msg"),
 			TraceLoggingWideString(pType, "activityType"));
 	}
@@ -182,7 +182,7 @@ namespace tsetwlog {
 
 	ThreadActivityPtr AddActivity(wchar_t *pType) {
 		if (nextActivityIndex >= ACTIVITY_STACK_SIZE) {
-			LogActivityError(L"Activity stack size exceeded", pType);
+			LogActivityWarning(L"ActivityStart stack size exceeded", pType);
 
 			// Still need to count the starts to correctly count/pair the stops
 			nextActivityIndex++;
@@ -197,11 +197,12 @@ namespace tsetwlog {
 	ThreadActivityPtr GetRunningActivity(wchar_t *pType) {
 		if (nextActivityIndex == 0) {
 			// Maybe the trace started in the middle of an activity, so there are extra stops to ignore.
-			LogActivityError(L"ActivityStop received with no activity activity (may have started before trace)", pType);
+			LogActivityWarning(L"ActivityStop received with no activity activity (may have started before trace)", pType);
 			return nullptr;
 		}
 		if (nextActivityIndex > ACTIVITY_STACK_SIZE) {
 			// We ran past the end and stopped logging new activities. Just count the stops.
+			LogActivityWarning(L"ActivityStop received for activity over stack limit", pType);
 			nextActivityIndex--;
 			return nullptr;
 		}

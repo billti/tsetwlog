@@ -1,3 +1,4 @@
+# TODO
 
 How should this handle initialization and multiple instances?
 
@@ -12,3 +13,7 @@ However are the Activity stacks thread specific?
  - This basically means that on any thread, the activity stack is still going to fully populat and unwind
    - But other threads may run in parallel and log activies. So still need to use TLS.
    - Can always bail if logging has never been started.
+
+# More info
+ - https://docs.microsoft.com/en-us/windows/desktop/tracelogging/trace-logging-portal
+ - https://nodejs.org/dist/latest-v10.x/docs/api/n-api.html

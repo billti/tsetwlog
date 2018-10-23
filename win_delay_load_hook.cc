@@ -1,5 +1,5 @@
-#include <windows.h>
-#include "node_api.h"
+#define NAPI_IMPL
+#include "tsetwlog.h"
 
 /*
  * This code is needed as the module builds against the node.exe library, but at runtime this is
@@ -8,19 +8,13 @@
  *
  * This means node.exe must be delay loaded, and the indirection below used to return the right module to bind to
  * should it not be named "node.exe".
- *
  */
 
-// Declare an 'impl_' prefixed pointer for every NAPI function we want to use
-#define DECL_NAPI_IMPL(fn_name) decltype(&fn_name) impl_##fn_name
-
-DECL_NAPI_IMPL(napi_module_register);
-DECL_NAPI_IMPL(napi_create_function);
-DECL_NAPI_IMPL(napi_set_named_property);
-DECL_NAPI_IMPL(napi_add_env_cleanup_hook);
-DECL_NAPI_IMPL(napi_get_cb_info);
-DECL_NAPI_IMPL(napi_typeof);
-DECL_NAPI_IMPL(napi_get_value_string_utf16);
+// Macro to simplify retrieving of delay loaded NAPI functions. Keep format in sync with DECL_NAPI_IMPL in tsetwlog.h
+#define GET_NAPI_IMPL(nodeModule, fn_name)          \
+    fn_addr = GetProcAddress(nodeModule, #fn_name); \
+    if (fn_addr == NULL) return false;              \
+    p##fn_name = (decltype(p##fn_name))fn_addr;
 
 bool LoadNapiFunctions()
 {
@@ -40,19 +34,14 @@ bool LoadNapiFunctions()
 		}
 	}
 
-#define GET_NAPI_IMPL(fn_name) \
-fn_addr = GetProcAddress(nodeModule, #fn_name); \
-if (fn_addr == NULL) return false;              \
-impl_##fn_name = (decltype(impl_##fn_name))fn_addr;
-
 	// Assign the addresses of the needed functions to the "impl_*" pointers.
-	GET_NAPI_IMPL(napi_module_register);
-	GET_NAPI_IMPL(napi_create_function);
-	GET_NAPI_IMPL(napi_set_named_property);
-	GET_NAPI_IMPL(napi_add_env_cleanup_hook);
-	GET_NAPI_IMPL(napi_get_cb_info);
-	GET_NAPI_IMPL(napi_typeof);
-	GET_NAPI_IMPL(napi_get_value_string_utf16);
+	GET_NAPI_IMPL(nodeModule, napi_module_register);
+	GET_NAPI_IMPL(nodeModule, napi_create_function);
+	GET_NAPI_IMPL(nodeModule, napi_set_named_property);
+	GET_NAPI_IMPL(nodeModule, napi_add_env_cleanup_hook);
+	GET_NAPI_IMPL(nodeModule, napi_get_cb_info);
+	GET_NAPI_IMPL(nodeModule, napi_typeof);
+	GET_NAPI_IMPL(nodeModule, napi_get_value_string_utf16);
 
 	return true;
 }
