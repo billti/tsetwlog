@@ -1,0 +1,21 @@
+{
+  "name": "tsetwlog",
+  "version": "0.1.0",
+  "description": "ETW logging native Node.js module",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/billti/tsetwlog.git"
+  },
+  "keywords": [
+    "etw",
+    "napi",
+    "node"
+  ],
+  "author": "Bill Ticehurst",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/billti/tsetwlog/issues"
+  },
+  "homepage": "https://github.com/billti/tsetwlog#readme"
+}

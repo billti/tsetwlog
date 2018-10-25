@@ -1,0 +1,16 @@
+*.sln
+*.vcxproj
+*.user
+/src/
+/.vs/
+/.vscode/
+/Debug/
+/Release/
+*.iobj
+*.ipdb
+*.pdb
+*.map
+/include/
+/lib/
+build.bat
+notes.txt

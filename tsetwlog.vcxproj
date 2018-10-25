@@ -153,10 +153,10 @@
   <ItemGroup>
     <None Include=".gitignore" />
     <None Include="test.js" />
-    <None Include="misc\ts-wpr-profile.wprp">
-      <SubType>Designer</SubType>
-      <FileType>XML</FileType>
-    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="misc\ts-wpa-regions.xml" />
+    <Xml Include="misc\ts-wpr-profile.wprp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\crt.cpp" />
@@ -166,9 +166,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tsetwlog.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="misc\ts-wpa-regions.xml" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="notes.txt" />
