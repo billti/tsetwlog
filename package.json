@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "ETW logging native Node.js module",
   "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/billti/tsetwlog.git"
