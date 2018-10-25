@@ -16,8 +16,8 @@
     <EventCollector
         Id="EventCollector_TypeScript"
         Name="WPR TypeScript Event Collector">
-      <BufferSize Value="128"/>
-      <Buffers Value="64"/>
+      <BufferSize Value="256"/>
+      <Buffers Value="5" PercentageOfTotalMemory="true"/>
     </EventCollector>
     <!--<SystemProvider Id="SystemProvider_TypeScript" Base="SystemProvider_Base">
       <Keywords Operation="Add">
