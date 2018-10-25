@@ -159,25 +159,26 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="crt.cpp" />
-    <ClCompile Include="main.cc" />
-    <ClCompile Include="tsetwlog.cpp" />
-    <ClCompile Include="win_delay_load_hook.cc" />
+    <ClCompile Include="src\crt.cpp" />
+    <ClCompile Include="src\main.cc" />
+    <ClCompile Include="src\tsetwlog.cpp" />
+    <ClCompile Include="src\win_delay_load_hook.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="tsetwlog.h" />
+    <ClInclude Include="src\tsetwlog.h" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="ts-wpa-regions.xml" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="notes.txt" />
+    <Text Include="readme.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   <ImportGroup Label="ExtensionTargets" />
   <PropertyGroup>
-    <LocalDebuggerCommand>C:\Program Files (x86)\Microsoft Visual Studio\Preview\Enterprise\MSBuild\Microsoft\VisualStudio\NodeJs\node.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>node.exe</LocalDebuggerCommand>
     <LocalDebuggerCommandArguments>test.js</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerAttach>false</LocalDebuggerAttach>
