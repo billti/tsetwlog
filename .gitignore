@@ -3,5 +3,7 @@
 /.vs/
 /Debug/
 /Release/
-/ia32/
-/x64/
+*.iobj
+*.ipdb
+*.pdb
+*.map
