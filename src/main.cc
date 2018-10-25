@@ -8,8 +8,8 @@
  *  - Also, don't allocate over a page (4kb) of locals in a function, else you'll get an unresolved external symbol for _chkstk
  *    - See https://stackoverflow.com/questions/7420927/unresolved-symbols-when-linking-without-c-runtime-with-vs2010
  *  - This also requires knowing how some of the funky ETW and Node.js macros work to avoid potentical issues:
- *    - See details on NAPI_MODULE below. This required mimicing in the process attach event in DllMain to initialize
- *    - ETW initialization (TRACELOGGING_DEFINE_PROVIDER) _appears_ to be a constant expression, (so hopefully does require startup initialization)
+ *    - See details on NAPI_MODULE below. This is mimiced in the process attach event in DllMain to initialize
+ *    - ETW initialization (TRACELOGGING_DEFINE_PROVIDER) _appears_ to be a constant expression, (so hopefully does require CRT initialization)
  *  - Exceptions and runtime type information are also disabled for simplicity and size.
  *
  * Result: A skeleton native module compiled is around 15kb, instead of around 100kb when statically linking in the CRT.
@@ -17,7 +17,7 @@
 
 namespace tsetwlog {
 
-	// TODO: Is this safe if initialized multiple times in a process?
+	// TODO: Is this safe if initialized multiple times in a process? May need to ensure InitEtw is only called once.
 	// See https://nodejs.org/dist/latest-v10.x/docs/api/addons.html#addons_context_aware_addons
 	napi_value Init(napi_env env, napi_value exports) {
 		InitEtw();
@@ -56,16 +56,16 @@ namespace tsetwlog {
 			register_fn("logInfoEvent", LogInfoEvent) &&
 			register_fn("logPerfEvent", LogPerfEvent);
 
-		if (!success) return nullptr; // TODO: Set exception?
+		if (!success) return nullptr; // TODO: Set exception? Just fails silently for now (but would likely crash if called).
 
 		return exports;
 	}
 
 	// NAPI_MODULE(NODE_GYP_MODULE_NAME, Init)
 
-	/* The above expands in the preprocessor to the below. Allocating the registration function
-	 * directly in the C-runtime initialization section (".CRT$XCU") is a little "awkward", and 
-	 * does make it hard to build native add-ons that don't link against the CRT.
+	/* The above usual macro expands in the preprocessor to the below. Allocating the registration 
+	 * function directly in the C-runtime initialization section (".CRT$XCU") is a little "awkward", 
+	 * and does make it hard to build native add-ons that don't link against the CRT.
 
 	extern "C" {
 		static napi_module _module = 
@@ -98,7 +98,7 @@ namespace tsetwlog {
 
 			if (fdwReason == DLL_PROCESS_ATTACH)
 			{
-				LoadNapiFunctions();
+				LoadNapiFunctions(); // Custom "delay load" implementation of the Node functions.
 				_module = {
 					NAPI_MODULE_VERSION,
 					0,

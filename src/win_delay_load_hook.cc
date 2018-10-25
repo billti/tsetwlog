@@ -10,12 +10,6 @@
  * should it not be named "node.exe".
  */
 
-// Macro to simplify retrieving of delay loaded NAPI functions. Keep format in sync with DECL_NAPI_IMPL in tsetwlog.h
-#define GET_NAPI_IMPL(nodeModule, fn_name)          \
-    fn_addr = GetProcAddress(nodeModule, #fn_name); \
-    if (fn_addr == NULL) return false;              \
-    p##fn_name = (decltype(p##fn_name))fn_addr;
-
 bool LoadNapiFunctions()
 {
 	// Handle to the .exe for the current process (e.g. node.exe in the mainline scenario)
@@ -25,7 +19,7 @@ bool LoadNapiFunctions()
 
 	// If not, see if node.dll is present and contains the exports (e.g. Electron scenario).
 	if (fn_addr == NULL) {
-		nodeModule = GetModuleHandle("node.dll");
+		nodeModule = GetModuleHandle(L"node.dll");
 		if (nodeModule == NULL) return false;
 		fn_addr = GetProcAddress(nodeModule, "napi_module_register");
 		if (fn_addr == NULL) {
@@ -34,14 +28,20 @@ bool LoadNapiFunctions()
 		}
 	}
 
-	// Assign the addresses of the needed functions to the "impl_*" pointers.
-	GET_NAPI_IMPL(nodeModule, napi_module_register);
-	GET_NAPI_IMPL(nodeModule, napi_create_function);
-	GET_NAPI_IMPL(nodeModule, napi_set_named_property);
-	GET_NAPI_IMPL(nodeModule, napi_add_env_cleanup_hook);
-	GET_NAPI_IMPL(nodeModule, napi_get_cb_info);
-	GET_NAPI_IMPL(nodeModule, napi_typeof);
-	GET_NAPI_IMPL(nodeModule, napi_get_value_string_utf16);
+	// Macro to simplify retrieving of delay loaded NAPI functions. Keep format in sync with DECL_NAPI_IMPL in tsetwlog.h
+#define GET_NAPI_IMPL(fn_name)                      \
+    fn_addr = GetProcAddress(nodeModule, #fn_name); \
+    if (fn_addr == NULL) return false;              \
+    p##fn_name = (decltype(p##fn_name))fn_addr;
+
+	// Assign the addresses of the needed functions to the "p*" named pointers.
+	GET_NAPI_IMPL(napi_module_register);
+	GET_NAPI_IMPL(napi_create_function);
+	GET_NAPI_IMPL(napi_set_named_property);
+	GET_NAPI_IMPL(napi_add_env_cleanup_hook);
+	GET_NAPI_IMPL(napi_get_cb_info);
+	GET_NAPI_IMPL(napi_typeof);
+	GET_NAPI_IMPL(napi_get_value_string_utf16);
 
 	return true;
 }

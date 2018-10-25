@@ -180,6 +180,14 @@ namespace tsetwlog {
 		return nullptr;
 	}
 
+	/*
+	 * The code from here down is for tracking activities (i.e. ranges demarked by a start/stop pair of events
+	 * that can later be tied together with the events within them, and other activities they spawn.
+	 *
+	 * This code could probably be refactored to be a little less repetitive, however note that the event name
+	 * does need to be a string literal due to the way the macros work (i.e. you couldn't use a common method
+	 * that takes the event name as a parameter to do the logging).
+	*/
 	ThreadActivityPtr AddActivity(wchar_t *pType) {
 		if (nextActivityIndex >= ACTIVITY_STACK_SIZE) {
 			LogActivityWarning(L"ActivityStart stack size exceeded", pType);

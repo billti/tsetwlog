@@ -6,7 +6,12 @@
 Install from npm via: `npm install tsetwlog`
 
 ETW is a Windows technology, so this module only works on Windows (Win7 or later). The module is built using
-the N-API interface and should work for Node.js 10.2 or later. (See https://nodejs.org/docs/v10.2.0/api/n-api.html)
+the N-API interface and works on Node.js 10.2 or later. (See https://nodejs.org/docs/v10.2.0/api/n-api.html)
+
+## Developing
+
+The type definitions are included in the package, so if using VS or VS Code to write JavaScript or TypeScript,
+then intellisense or compiling should just work after importing the module.
 
 ## Building
 From a Visual Studio 2017 Developer Command prompt, run `build.bat` to build the 32/64 bit binaries.

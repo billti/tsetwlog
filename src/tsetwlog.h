@@ -1,5 +1,6 @@
 #pragma once
 #define WINVER 0x0601 // Support Win7 or later
+#define UNICODE
 
 // The below intrinsics are needed on debug builds currently
 // See https://docs.microsoft.com/en-us/cpp/intrinsics/intrinsics-available-on-all-architectures
@@ -13,10 +14,9 @@
 #include <winmeta.h>
 #include <node_api.h>
 
-// Declarations for the imported NAPI functions to use
 bool LoadNapiFunctions();
 
-// Declare of define 
+// Declare or define the NAPI method pointers?
 #ifdef NAPI_IMPL
   #define DECL_NAPI_IMPL(fn_name) decltype(&fn_name) p##fn_name
 #else
