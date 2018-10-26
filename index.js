@@ -7,7 +7,7 @@ if (process && (process.arch === "ia32" || process.arch === "x64") && process.pl
     // Check Node.js requirements. The N-API usage in the module requires Node.js 10.2 or later
     if (process.versions && process.versions.node) {
         var nodeVersionParts = process.versions.node.split('.');
-        if (parseInt(nodeVersionParts[0]) === 10 && parseInt(nodeVersionParts[1]) >= 2 || parseInt(nodeVersionParts[0]) > 10) {
+        if (parseInt(nodeVersionParts[0]) === 8 && parseInt(nodeVersionParts[1]) >= 9 || parseInt(nodeVersionParts[0]) > 9) {
             module.exports = require(`./${process.arch}/tsetwlog.node`);
             loaded = true;
         }

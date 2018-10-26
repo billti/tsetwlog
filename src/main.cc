@@ -34,7 +34,8 @@ namespace tsetwlog {
 
 		// Sort-circuiting evaluation for any failures
 		// Note: napi_add_env_cleanup_hook requires Node.js 10.2 or later. See https://nodejs.org/dist/latest-v10.x/docs/api/n-api.html#n_api_napi_add_env_cleanup_hook
-		bool success = pnapi_add_env_cleanup_hook(env, CleanupEtw, nullptr) == napi_ok &&
+		// Commented out cleanup hook for now, as VS Code uses an Electron which uses Node 8.9.3 (files at https://nodejs.org/dist/v8.9.3/)
+		bool success = /* pnapi_add_env_cleanup_hook(env, CleanupEtw, nullptr) == napi_ok && */
 			register_fn("logEvent", LogEvent) &&
 			register_fn("logStartCommand", LogStartCommand) &&
 			register_fn("logStopCommand", LogStopCommand) &&

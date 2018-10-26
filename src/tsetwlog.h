@@ -27,10 +27,10 @@ bool LoadNapiFunctions();
 DECL_NAPI_IMPL(napi_module_register);
 DECL_NAPI_IMPL(napi_create_function);
 DECL_NAPI_IMPL(napi_set_named_property);
-DECL_NAPI_IMPL(napi_add_env_cleanup_hook);
 DECL_NAPI_IMPL(napi_get_cb_info);
 DECL_NAPI_IMPL(napi_typeof);
 DECL_NAPI_IMPL(napi_get_value_string_utf16);
+//DECL_NAPI_IMPL(napi_add_env_cleanup_hook); // Not available on Node.js 8
 
 constexpr UINT64 TSSERVER_KEYWORD_PERF = 0x01;
 

@@ -38,10 +38,10 @@ bool LoadNapiFunctions()
 	GET_NAPI_IMPL(napi_module_register);
 	GET_NAPI_IMPL(napi_create_function);
 	GET_NAPI_IMPL(napi_set_named_property);
-	GET_NAPI_IMPL(napi_add_env_cleanup_hook);
 	GET_NAPI_IMPL(napi_get_cb_info);
 	GET_NAPI_IMPL(napi_typeof);
 	GET_NAPI_IMPL(napi_get_value_string_utf16);
+	// GET_NAPI_IMPL(napi_add_env_cleanup_hook); // Not available on Node.js 8
 
 	return true;
 }
