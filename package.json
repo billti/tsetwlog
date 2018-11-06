@@ -1,9 +1,6 @@
 {
   "name": "tsetwlog",
   "version": "0.1.0",
-  "engines" : {
-    "node" : ">= 10.2.0"
-  },
   "description": "ETW logging native Node.js module",
   "main": "index.js",
   "types": "index.d.ts",

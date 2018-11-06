@@ -1,10 +1,32 @@
 <?xml version='1.0' encoding='utf-8' standalone='yes'?>
 <InstrumentationManifest>
+  <!-- 
+See docs at https://docs.microsoft.com/en-us/windows-hardware/test/wpt/creating-a-regions-of-interest-file 
+ 
+VS language service (ProviderName="TypeScriptEventSource") sends the command with event fields:
+ - Sends a command with the below event fields:
+   - ProviderGuid="2c462c26-4e06-5ce4-8f88-934046dbbcd6"
+   - EventName="SendCommand/Start"
+   - ID="17"
+   - Version="0"
+   - seqId="1"
+   - commandName="configure"
+   - tsServerId="12,904"
+
+TSServer (ProviderName="tsserverEventSource") receives the command with event fields:
+ - ProviderGuid="ac4e9dd1-3a7a-5022-fc37-f2394bc4f09e"
+ - EventName="Command/Start"
+ - ID="4"
+ - Version="0" 
+ - command="configure" 
+ - msg="{&quot;seq&quot;:1,&quot;command...
+
+  -->
   <Instrumentation>
     <Regions>
       <RegionRoot Guid="{ced10e1c-50c7-4890-add8-fee4b3a9557f}"
-                  Name="tsserver-commands"
-                  FriendlyName="Commands">
+                  Name="LSCommand"
+                  FriendlyName="VSLS Commands">
         <Region Guid="{e0647f08-d344-4734-a306-4eba660bb271}"
                 Name="tsserver-command"
                 FriendlyName="Command">

@@ -176,7 +176,7 @@ namespace tsetwlog {
 			TraceLoggingKeyword(TSSERVER_KEYWORD_PERF),
 			TraceLoggingWideString(chBuf1, "msg")
 		);
-		
+
 		return nullptr;
 	}
 
