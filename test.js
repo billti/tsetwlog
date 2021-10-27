@@ -18,7 +18,7 @@ rl.question('Press enter to exit\n\n', (answer) => {
 });
 
 addon.logEvent("About to run an activity");
-addon.logStartCommand("init", "starting to run");
+addon.logStartCommand("init", "starting to run", "{ac4e9dd1-3a7a-5022-fc37-f2394bc4f09e}");
 addon.logEvent("this is a test");
 addon.logStartUpdateProgram("program changed");
 addon.logStopUpdateProgram("program updated");

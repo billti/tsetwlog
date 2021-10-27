@@ -156,7 +156,9 @@
   </ItemGroup>
   <ItemGroup>
     <Xml Include="misc\ts-wpa-regions.xml" />
-    <Xml Include="misc\ts-wpr-profile.wprp" />
+    <Xml Include="misc\ts-wpr-profile.wprp">
+      <SubType>Designer</SubType>
+    </Xml>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\crt.cpp" />
@@ -165,6 +167,7 @@
     <ClCompile Include="src\win_delay_load_hook.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\activity-stack.h" />
     <ClInclude Include="src\tsetwlog.h" />
   </ItemGroup>
   <ItemGroup>
@@ -175,7 +178,7 @@
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   <ImportGroup Label="ExtensionTargets" />
   <PropertyGroup>
-    <LocalDebuggerCommand>node.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>C:\temp\node-v10.2.0-win-x64\node.exe</LocalDebuggerCommand>
     <LocalDebuggerCommandArguments>test.js</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerAttach>false</LocalDebuggerAttach>

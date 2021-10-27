@@ -4,7 +4,7 @@ export function logEvent(msg: string): void;
 export function logErrEvent(msg: string): void;
 export function logPerfEvent(msg: string): void;
 export function logInfoEvent(msg: string): void;
-export function logStartCommand(command: string, msg: string): void;
+export function logStartCommand(command: string, msg: string, activityId?: string): void;
 export function logStopCommand(command: string, msg: string): void;
 export function logStartUpdateProgram(msg: string): void;
 export function logStopUpdateProgram(msg: string): void;

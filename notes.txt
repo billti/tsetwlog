@@ -56,3 +56,15 @@ However are the Activity stacks thread specific?
  - This basically means that on any thread, the activity stack is still going to fully populat and unwind
    - But other threads may run in parallel and log activies. So still need to use TLS.
    - Can always bail if logging has never been started.
+
+
+
+# Cleaner approach
+
+Activities are a backwards pointing linked list.
+Head will be NULL if none active.
+On cmd entry, if an activity is passed in, new an instance of TraceLoggingThreadActivityIdSetter
+ - need to track deleting this when the corresponding command finishes. Maybe wrap in a helper class somehow.
+
+Create a list of activities, which can be our own type of the passed in one, or the TraceLoggingThreadActivity.
+
